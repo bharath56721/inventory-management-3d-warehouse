@@ -1,0 +1,6 @@
+{
+  "name": "Inventory Management System & Architecture Guide",
+  "description": "Interactive full-featured Inventory Management workspace with real-time dashboard, audit history, and comprehensive developer architecture guide.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

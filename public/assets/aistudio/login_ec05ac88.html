@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login · Inventory System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+
+    <div class="grid-bg"></div>
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+
+    <div class="auth-card">
+        <div class="logo">Inventory<span>System</span></div>
+        <div class="auth-tagline">Stock Intelligence Platform</div>
+
+        <h2>Welcome back</h2>
+        <p class="auth-subtext">Sign in to your workspace</p>
+
+        <div class="auth-inputs">
+            <div>
+                <label class="input-field-label">Username</label>
+                <input id="login-user" type="text" placeholder="Enter your username" onkeydown="if(event.key==='Enter') login()">
+            </div>
+            <div>
+                <label class="input-field-label">Password</label>
+                <input id="login-pass" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter') login()">
+            </div>
+            <div class="auth-error" id="login-error"></div>
+            <button class="auth-btn" id="login-btn" onclick="login()">Sign In →</button>
+        </div>
+
+        <div class="auth-link">
+            New here? <a href="register.html">Create an account</a>
+        </div>
+    </div>
+
+    <script>
+    function login() {
+        const userVal = document.getElementById("login-user").value.trim();
+        const passVal = document.getElementById("login-pass").value;
+        const errEl   = document.getElementById("login-error");
+        const btn     = document.getElementById("login-btn");
+
+        errEl.style.display = "none";
+
+        if (!userVal || !passVal) {
+            errEl.textContent = "Please enter both username and password.";
+            errEl.style.display = "block";
+            return;
+        }
+
+        btn.textContent = "Signing in…";
+        btn.disabled = true;
+
+        fetch("http://localhost:8080/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: userVal, password: passVal })
+        })
+        .then(async res => {
+            const text = await res.text();
+            if (text.trim() === "SUCCESS") {
+                localStorage.setItem("user", userVal);
+                window.location.href = "index.html";
+            } else {
+                errEl.textContent = "Invalid username or password.";
+                errEl.style.display = "block";
+                btn.textContent = "Sign In →";
+                btn.disabled = false;
+            }
+        })
+        .catch(() => {
+            errEl.textContent = "Cannot connect to server. Is the backend running?";
+            errEl.style.display = "block";
+            btn.textContent = "Sign In →";
+            btn.disabled = false;
+        });
+    }
+    </script>
+</body>
+</html>

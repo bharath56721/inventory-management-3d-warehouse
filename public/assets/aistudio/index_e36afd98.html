@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <script>
+        if (!localStorage.getItem("user")) {
+            window.location.href = "login.html";
+        }
+    </script>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- HEADER -->
+    <header class="main-header">
+        <div class="logo">Inventory<span>System</span></div>
+        <nav class="header-nav">
+            <a href="#" class="nav-link active" onclick="showView('dashboard')">Dashboard</a>
+            <a href="#" class="nav-link" onclick="showView('products')">Products</a>
+            <a href="#" class="nav-link" onclick="showView('history')">Stock History</a>
+        </nav>
+        <div class="header-right">
+            <span class="user-badge" id="username-display"></span>
+            <button class="logout-btn" onclick="logout()">Sign out</button>
+        </div>
+    </header>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="view-section">
+        <div class="main-container">
+            <div class="page-title">
+                <h2>Dashboard Overview</h2>
+                <p>Welcome back, <strong id="dash-user"></strong> — here's your inventory at a glance</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">📦</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="dash-total">0</div>
+                        <div class="stat-label">Total Products</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red">⚠️</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="dash-low">0</div>
+                        <div class="stat-label">Low Stock Items</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="dash-available">0</div>
+                        <div class="stat-label">Available Items</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">💰</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="dash-value">₹0</div>
+                        <div class="stat-label">Total Stock Value</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-grid">
+                <div class="dash-card">
+                    <h3>Category Breakdown</h3>
+                    <div id="category-bars"></div>
+                </div>
+                <div class="dash-card">
+                    <h3>Low Stock Alerts</h3>
+                    <div id="low-stock-list" class="alert-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCTS VIEW -->
+    <div id="view-products" class="view-section hidden">
+        <div class="main-container">
+            <div class="page-title-bar">
+                <h2>Products</h2>
+                <button class="add-btn" onclick="openModal()">+ Add Product</button>
+            </div>
+
+            <!-- FILTERS & SEARCH -->
+            <div class="filter-bar">
+                <div class="search-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input id="search" placeholder="Search by name…" oninput="handleSearch()">
+                </div>
+                <div class="filter-group">
+                    <select id="filter-category" onchange="applyFilters()">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select id="filter-status" onchange="applyFilters()">
+                        <option value="">All Status</option>
+                        <option value="AVAILABLE">Available</option>
+                        <option value="LOW_STOCK">Low Stock</option>
+                    </select>
+                    <select id="sort-select" onchange="applyFilters()">
+                        <option value="">Default Sort</option>
+                        <option value="price_asc">Price ↑</option>
+                        <option value="price_desc">Price ↓</option>
+                        <option value="name_asc">Name A–Z</option>
+                        <option value="qty_asc">Qty ↑</option>
+                    </select>
+                </div>
+                <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+            </div>
+
+            <!-- TABLE -->
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Low Stock At</th>
+                            <th>Status</th>
+                            <th>Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table"></tbody>
+                </table>
+                <div id="empty-state" class="empty-state hidden">
+                    <p>No products found.</p>
+                </div>
+            </div>
+
+            <!-- PAGINATION -->
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- STOCK HISTORY VIEW -->
+    <div id="view-history" class="view-section hidden">
+        <div class="main-container">
+            <div class="page-title">
+                <h2>Stock History</h2>
+                <p>Audit log of all stock changes</p>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Change Type</th>
+                            <th>Old Qty</th>
+                            <th>New Qty</th>
+                            <th>Changed By</th>
+                            <th>Date &amp; Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table"></tbody>
+                </table>
+                <div id="history-empty" class="empty-state hidden">
+                    <p>No stock history found.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD / EDIT MODAL -->
+    <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModalOnOverlay(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Product</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Product Name *</label>
+                        <input id="m-name" placeholder="e.g. Wireless Mouse" maxlength="100">
+                        <span class="field-error" id="err-name"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="m-category">
+                            <option value="">Select Category</option>
+                            <option>Stationery</option>
+                            <option>Electronics</option>
+                            <option>Groceries</option>
+                            <option>Clothing</option>
+                            <option>Furniture</option>
+                            <option>Tools</option>
+                        </select>
+                        <span class="field-error" id="err-category"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Price (₹) *</label>
+                        <input id="m-price" type="number" min="0" step="0.01" placeholder="0.00">
+                        <span class="field-error" id="err-price"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity *</label>
+                        <input id="m-quantity" type="number" min="0" placeholder="0">
+                        <span class="field-error" id="err-quantity"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Low Stock Threshold</label>
+                        <input id="m-threshold" type="number" min="1" placeholder="Default: 10">
+                        <small class="field-hint">Alert when qty falls below this value</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="add-btn" id="modal-save-btn" onclick="saveProduct()">Add Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRM MODAL -->
+    <div id="delete-overlay" class="modal-overlay hidden" onclick="closeDeleteOnOverlay(event)">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="delete-product-name"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
